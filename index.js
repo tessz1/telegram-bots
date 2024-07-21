@@ -1,6 +1,7 @@
 const TelegramApi = require("node-telegram-bot-api");
 const coursesList = require("./coursesList");
 const faqList = require("./faqList");
+const { keyboard } = require("telegraf/markup");
 require("dotenv").config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -15,6 +16,7 @@ bot.setMyCommands([
   { command: "/enroll", description: "Записаться на курс" },
   { command: "/faq", description: "Часто задаваемые вопросы" },
   { command: "/contact", description: "Связаться с Ариной" },
+  { command: "/store", description: "Магический магазин" },
 ]);
 
 bot.context = {}; // Контекст для хранения последних сообщений
@@ -34,6 +36,8 @@ const start = () => {
       await handleContactCommand(chatId);
     } else if (text === "/enroll") {
       await handleEnrollCommand(chatId);
+    } else if (text === "/store") {
+      await handleStoreCommand(chatId);
     } else {
       await bot.sendMessage(chatId, "Извините, я не понимаю эту команду.");
     }
@@ -50,7 +54,9 @@ const start = () => {
         console.error("Failed to delete message:", error);
       }
     }
-
+    /****************************************************************************************************************************
+                                           SWITCH, CASE INLINE_KEYBORD
+ ****************************************************************************************************************************/
     switch (data) {
       case "view_courses":
         await handleCoursesCommand(chatId);
@@ -103,6 +109,9 @@ const start = () => {
   });
 };
 
+/****************************************************************************************************************************
+                                           WELCOME MESSAGE /START
+ ****************************************************************************************************************************/
 const sendWelcomeMessage = async (chatId) => {
   if (bot.context[chatId] && bot.context[chatId].lastMessageId) {
     try {
@@ -111,9 +120,9 @@ const sendWelcomeMessage = async (chatId) => {
       console.error("Failed to delete message:", error);
     }
   }
-
   const sentMessage = await bot.sendMessage(
     chatId,
+
     "Добро пожаловать! Выберите действие:",
     {
       reply_markup: {
@@ -135,6 +144,9 @@ const sendWelcomeMessage = async (chatId) => {
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
 
+/****************************************************************************************************************************
+                                           COURSE COMMAND /COURSE 
+ ****************************************************************************************************************************/
 const handleCoursesCommand = async (chatId) => {
   const courseButtons = coursesList.map((course, index) => ({
     text: course.title,
@@ -152,6 +164,9 @@ const handleCoursesCommand = async (chatId) => {
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
 
+/****************************************************************************************************************************
+                                           COURSE DETAILS COMMAND /COURSE 
+ ****************************************************************************************************************************/
 const handleCourseDetails = async (chatId, data) => {
   const courseIndex = parseInt(data.split("_")[1], 10);
   const course = coursesList[courseIndex];
@@ -173,6 +188,15 @@ const handleCourseDetails = async (chatId, data) => {
 
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
+
+/****************************************************************************************************************************
+                                           COURSE DETAILS COMMAND /COURSE 
+ ****************************************************************************************************************************/
+const handleStore = async (chatId, data) => {};
+
+/****************************************************************************************************************************
+                                           FAQ DETAILS COMMAND /FAQ
+ ****************************************************************************************************************************/
 
 const handleFaqCommand = async (chatId) => {
   const faqMessage = faqList
@@ -204,6 +228,9 @@ const handleFaqCommand = async (chatId) => {
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
 
+/****************************************************************************************************************************
+                                           CONTACT COMMAND /CONTACTS
+ ****************************************************************************************************************************/
 const handleContactCommand = async (chatId) => {
   if (bot.context[chatId] && bot.context[chatId].lastMessageId) {
     try {
@@ -213,22 +240,28 @@ const handleContactCommand = async (chatId) => {
     }
   }
 
-  const sentMessage = await bot.sendMessage(chatId, "Чтобы связаться @Kaira_21", {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: "Назад",
-            callback_data: "back",
-          },
+  const sentMessage = await bot.sendMessage(
+    chatId,
+    "Чтобы связаться @Kaira_21",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Назад",
+              callback_data: "back",
+            },
+          ],
         ],
-      ],
-    },
-  });
+      },
+    }
+  );
 
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
-
+/****************************************************************************************************************************
+                                           ENROLL COMMAND /ENROLL
+ ****************************************************************************************************************************/
 const handleEnrollCommand = async (chatId) => {
   const enrollButtons = coursesList.map((course, index) => ({
     text: course.title,
@@ -247,7 +280,9 @@ const handleEnrollCommand = async (chatId) => {
 
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
-
+/****************************************************************************************************************************
+                                           ENROLL CONFIRMATION 
+ ****************************************************************************************************************************/
 const handleEnrollConfirmation = async (chatId, data) => {
   const courseIndex = parseInt(data.split("_")[1], 10);
   const course = coursesList[courseIndex];
@@ -267,6 +302,20 @@ const handleEnrollConfirmation = async (chatId, data) => {
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
 
+const keybordCustom = {
+  reply_markup: {
+    keyboard: [[{ text: "Начать" }]],
+    resize_keybord: true,
+    one_time_keybord: true,
+  },
+};
+
+bot.onText("//start", (msg) => {
+  bot.sendMessage(msg.chat.id, "", keybordCustom);
+});
+/****************************************************************************************************************************
+                                           INVOICE PAYMENT COURSE
+ ****************************************************************************************************************************/
 const handleSendInvoice = async (chatId, data) => {
   const courseIndex = parseInt(data.split("_")[1], 10);
   const course = coursesList[courseIndex];
