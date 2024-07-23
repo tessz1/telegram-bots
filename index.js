@@ -1,7 +1,7 @@
 const TelegramApi = require("node-telegram-bot-api");
 const coursesList = require("./coursesList");
 const faqList = require("./faqList");
-const { keyboard } = require("telegraf/markup");
+const { inlineKeyboard } = require("telegraf/markup");
 require("dotenv").config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -17,9 +17,11 @@ bot.setMyCommands([
   { command: "/faq", description: "Часто задаваемые вопросы" },
   { command: "/contact", description: "Связаться с Ариной" },
   { command: "/store", description: "Магический магазин" },
+  { command: "/consultation", description: "Консультация" },
+  { command: "diagnostic", description: "Диагностика" },
 ]);
 
-bot.context = {}; // Контекст для хранения последних сообщений
+bot.context = {};
 
 const start = () => {
   bot.on("message", async (msg) => {
@@ -37,7 +39,11 @@ const start = () => {
     } else if (text === "/enroll") {
       await handleEnrollCommand(chatId);
     } else if (text === "/store") {
-      await handleStoreCommand(chatId);
+      await handleStore(chatId);
+    } else if (text === "/consultation") {
+      await handleConsultation(chatId);
+    } else if (text === "/diagnostic") {
+      await handleDiagnostic(chatId);
     } else {
       await bot.sendMessage(chatId, "Извините, я не понимаю эту команду.");
     }
@@ -50,13 +56,12 @@ const start = () => {
     if (bot.context[chatId] && bot.context[chatId].lastMessageId) {
       try {
         await bot.deleteMessage(chatId, bot.context[chatId].lastMessageId);
+        delete bot.context[chatId].lastMessageId; // Удаляем ID после успешного удаления
       } catch (error) {
-        console.error("Failed to delete message:", error);
+        console.error("Failed to delete message:", error.message);
       }
     }
-    /****************************************************************************************************************************
-                                           SWITCH, CASE INLINE_KEYBORD
- ****************************************************************************************************************************/
+
     switch (data) {
       case "view_courses":
         await handleCoursesCommand(chatId);
@@ -72,6 +77,12 @@ const start = () => {
         break;
       case "back":
         await sendWelcomeMessage(chatId);
+        break;
+      case "handleConsultation":
+        await handleConsultation(chatId);
+        break;
+      case "handleDiagnostic":
+        await handleDiagnostic(chatId);
         break;
       default:
         if (data.startsWith("course_")) {
@@ -109,20 +120,16 @@ const start = () => {
   });
 };
 
-/****************************************************************************************************************************
-                                           WELCOME MESSAGE /START
- ****************************************************************************************************************************/
 const sendWelcomeMessage = async (chatId) => {
   if (bot.context[chatId] && bot.context[chatId].lastMessageId) {
     try {
       await bot.deleteMessage(chatId, bot.context[chatId].lastMessageId);
     } catch (error) {
-      console.error("Failed to delete message:", error);
+      console.error("Failed to delete message:", error.message);
     }
   }
   const sentMessage = await bot.sendMessage(
     chatId,
-
     "Добро пожаловать! Выберите действие:",
     {
       reply_markup: {
@@ -135,6 +142,18 @@ const sendWelcomeMessage = async (chatId) => {
           ],
           [{ text: "Записаться на курс", callback_data: "enroll_course" }],
           [{ text: "Часто задаваемые вопросы", callback_data: "view_faq" }],
+          [
+            {
+              text: "Запись на консультацию",
+              callback_data: "handleConsultation",
+            },
+          ],
+          [
+            {
+              text: "Записать на Магическую диагностику",
+              callback_data: "handleDiagnostic",
+            },
+          ],
           [{ text: "Связаться с Ариной", callback_data: "contact_arina" }],
         ],
       },
@@ -144,9 +163,47 @@ const sendWelcomeMessage = async (chatId) => {
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
 
-/****************************************************************************************************************************
-                                           COURSE COMMAND /COURSE 
- ****************************************************************************************************************************/
+const handleConsultation = async (chatId) => {
+  const sentMessage = await bot.sendMessage(
+    chatId,
+    "Для записи напишите помощнику @Arina_manager1\n\nСтоимость консультации 2000 рублей.",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Отмена",
+              callback_data: "back",
+            },
+          ],
+        ],
+      },
+    }
+  );
+
+  bot.context[chatId] = { lastMessageId: sentMessage.message_id };
+};
+
+const handleDiagnostic = async (chatId) => {
+  const sentMessage = bot.sendMessage(
+    chatId,
+    "Для записи напишите помощнику @Arina_manager1\n\nСтоимость диагностики 2000 рублей.",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Назад",
+              callback_data: "back",
+            },
+          ],
+        ],
+      },
+    }
+  );
+  bot.context[chatId] = { lastMessageId: sentMessage.message_id };
+};
+
 const handleCoursesCommand = async (chatId) => {
   const courseButtons = coursesList.map((course, index) => ({
     text: course.title,
@@ -164,9 +221,6 @@ const handleCoursesCommand = async (chatId) => {
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
 
-/****************************************************************************************************************************
-                                           COURSE DETAILS COMMAND /COURSE 
- ****************************************************************************************************************************/
 const handleCourseDetails = async (chatId, data) => {
   const courseIndex = parseInt(data.split("_")[1], 10);
   const course = coursesList[courseIndex];
@@ -189,14 +243,11 @@ const handleCourseDetails = async (chatId, data) => {
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
 
-/****************************************************************************************************************************
-                                           COURSE DETAILS COMMAND /COURSE 
- ****************************************************************************************************************************/
-const handleStore = async (chatId, data) => {};
+const handleStore = async (chatId) => {
+  const sentMessage = await bot.sendMessage(chatId, "Скоро 🔜");
 
-/****************************************************************************************************************************
-                                           FAQ DETAILS COMMAND /FAQ
- ****************************************************************************************************************************/
+  bot.context[chatId] = { lastMessageId: sentMessage.message_id };
+};
 
 const handleFaqCommand = async (chatId) => {
   const faqMessage = faqList
@@ -225,18 +276,16 @@ const handleFaqCommand = async (chatId) => {
       },
     }
   );
+
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
 
-/****************************************************************************************************************************
-                                           CONTACT COMMAND /CONTACTS
- ****************************************************************************************************************************/
 const handleContactCommand = async (chatId) => {
   if (bot.context[chatId] && bot.context[chatId].lastMessageId) {
     try {
       await bot.deleteMessage(chatId, bot.context[chatId].lastMessageId);
     } catch (error) {
-      console.error("Failed to delete message:", error);
+      console.error("Failed to delete message:", error.message);
     }
   }
 
@@ -259,9 +308,7 @@ const handleContactCommand = async (chatId) => {
 
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
-/****************************************************************************************************************************
-                                           ENROLL COMMAND /ENROLL
- ****************************************************************************************************************************/
+
 const handleEnrollCommand = async (chatId) => {
   const enrollButtons = coursesList.map((course, index) => ({
     text: course.title,
@@ -280,9 +327,7 @@ const handleEnrollCommand = async (chatId) => {
 
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
-/****************************************************************************************************************************
-                                           ENROLL CONFIRMATION 
- ****************************************************************************************************************************/
+
 const handleEnrollConfirmation = async (chatId, data) => {
   const courseIndex = parseInt(data.split("_")[1], 10);
   const course = coursesList[courseIndex];
@@ -302,62 +347,20 @@ const handleEnrollConfirmation = async (chatId, data) => {
   bot.context[chatId] = { lastMessageId: sentMessage.message_id };
 };
 
-const keybordCustom = {
-  reply_markup: {
-    keyboard: [[{ text: "Начать" }]],
-    resize_keybord: true,
-    one_time_keybord: true,
-  },
-};
-
-bot.onText("//start", (msg) => {
-  bot.sendMessage(msg.chat.id, "", keybordCustom);
-});
-/****************************************************************************************************************************
-                                           INVOICE PAYMENT COURSE
- ****************************************************************************************************************************/
 const handleSendInvoice = async (chatId, data) => {
   const courseIndex = parseInt(data.split("_")[1], 10);
   const course = coursesList[courseIndex];
-  const payload = `invoice_${courseIndex}`;
-  const description = "Полное руководство по магическому отливанию свинца";
-  const coursePrice = 10000;
-  const currency = "RUB";
-  const prices = [{ label: course.title, amount: coursePrice }];
 
-  try {
-    await bot.sendInvoice(
-      chatId,
-      course.title,
-      description,
-      payload,
-      providerToken,
-      currency,
-      prices,
-      {
-        need_name: true,
-        send_email_to_provider: true,
-        provider_data: JSON.stringify({
-          receipt: {
-            items: [
-              {
-                description: course.title,
-                quantity: "1.00",
-                amount: {
-                  value: (coursePrice / 100).toFixed(2),
-                  currency: "RUB",
-                },
-                vat_code: 1,
-              },
-            ],
-          },
-        }),
-        pay: true,
-      }
-    );
-  } catch (error) {
-    console.error("Error sending invoice:", error);
-  }
+  await bot.sendInvoice(
+    chatId,
+    `Оплата курса "${course.title}"`,
+    `Запись на курс "${course.title}".`,
+    `course_${courseIndex}`,
+    providerToken,
+    "RUB",
+    [{ label: `Оплата курса "${course.title}"`, amount: 2000 * 100 }],
+    []
+  );
 };
 
 start();
