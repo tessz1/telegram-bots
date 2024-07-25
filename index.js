@@ -1,7 +1,6 @@
 const TelegramApi = require("node-telegram-bot-api");
 const coursesList = require("./coursesList");
 const faqList = require("./faqList");
-const { inlineKeyboard } = require("telegraf/markup");
 require("dotenv").config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -18,7 +17,7 @@ bot.setMyCommands([
   { command: "/contact", description: "Связаться с Ариной" },
   { command: "/store", description: "Магический магазин" },
   { command: "/consultation", description: "Консультация" },
-  { command: "diagnostic", description: "Диагностика" },
+  { command: "/diagnostic", description: "Диагностика" },
 ]);
 
 bot.context = {};
@@ -56,7 +55,7 @@ const start = () => {
     if (bot.context[chatId] && bot.context[chatId].lastMessageId) {
       try {
         await bot.deleteMessage(chatId, bot.context[chatId].lastMessageId);
-        delete bot.context[chatId].lastMessageId; // Удаляем ID после успешного удаления
+        delete bot.context[chatId].lastMessageId;
       } catch (error) {
         console.error("Failed to delete message:", error.message);
       }
@@ -130,31 +129,36 @@ const sendWelcomeMessage = async (chatId) => {
   }
   const sentMessage = await bot.sendMessage(
     chatId,
-    "Добро пожаловать! Выберите действие:",
+    "Приветствую тебя, мой гость!🌟 \n\nПроходи, присаживайся удобно в кресло перед камином. Я налью тебе ароматный 🍵 чай и ты расскажешь мне все, что тебя беспокоит… Если есть желание помочь себе самому или своим близким, я научу тебя.\n\nМы вместе окунёмся в Мир Волшебства! Начнём?",
     {
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: "Посмотреть список доступных курсов",
+              text: "📚 Посмотреть список доступных курсов",
               callback_data: "view_courses",
             },
           ],
-          [{ text: "Записаться на курс", callback_data: "enroll_course" }],
-          [{ text: "Часто задаваемые вопросы", callback_data: "view_faq" }],
+          [{ text: "✏️ Записаться на курс", callback_data: "enroll_course" }],
+          [{ text: "❓ Часто задаваемые вопросы", callback_data: "view_faq" }],
           [
             {
-              text: "Запись на консультацию",
+              text: "🗣 Запись на консультацию",
               callback_data: "handleConsultation",
             },
           ],
           [
             {
-              text: "Записать на Магическую диагностику",
+              text: "🔍 Записать на диагностику",
               callback_data: "handleDiagnostic",
             },
           ],
-          [{ text: "Связаться с Ариной", callback_data: "contact_arina" }],
+          [
+            {
+              text: " 📞 Связь с нами",
+              callback_data: "contact_arina",
+            },
+          ],
         ],
       },
     }
@@ -166,7 +170,7 @@ const sendWelcomeMessage = async (chatId) => {
 const handleConsultation = async (chatId) => {
   const sentMessage = await bot.sendMessage(
     chatId,
-    "Для записи напишите помощнику @Arina_manager1\n\nСтоимость консультации 2000 рублей.",
+    "На личной консультации опредеяется проблема негативных влияний, пути их устранения.\n\nДля записи напишите помощнику @Arina_manager1\n\nСтоимость консультации 2000 рублей.",
     {
       reply_markup: {
         inline_keyboard: [
@@ -185,9 +189,9 @@ const handleConsultation = async (chatId) => {
 };
 
 const handleDiagnostic = async (chatId) => {
-  const sentMessage = bot.sendMessage(
+  const sentMessage = await bot.sendMessage(
     chatId,
-    "Для записи напишите помощнику @Arina_manager1\n\nСтоимость диагностики 2000 рублей.",
+    "Полный анализ и дагностика текущих энергетических потоков.\n\nОпределение блоков. Диагностика негативных магических воздействий.\n\nДиагностика: \n\n✅ Воске\n\n✅ Оракле\n\n✅ Свинце\n\nДля записи напишите помощнику @Arina_manager1\n\nСтоимость диагностики 2000 рублей.",
     {
       reply_markup: {
         inline_keyboard: [
@@ -291,7 +295,7 @@ const handleContactCommand = async (chatId) => {
 
   const sentMessage = await bot.sendMessage(
     chatId,
-    "Чтобы связаться @Kaira_21",
+    "Контакт:  @Kaira_21\n\nДля записи на диагностику и личную консультацию, пожалуйста, напишите помощнику: @Arina_manager1",
     {
       reply_markup: {
         inline_keyboard: [
