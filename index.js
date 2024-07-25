@@ -1,12 +1,13 @@
 const TelegramApi = require("node-telegram-bot-api");
 const coursesList = require("./coursesList");
+const db = require("./database");
+const express = require("express");
 const faqList = require("./faqList");
 require("dotenv").config();
-
+const app = express();
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const providerToken = process.env.PROVIDER_TOKEN;
 const inviteLink = process.env.TELEGRAM_INVITE_LINK;
-
 const bot = new TelegramApi(token, { polling: true });
 
 bot.setMyCommands([
@@ -49,6 +50,30 @@ const start = () => {
   });
 
   bot.on("callback_query", async (query) => {
+    const username = query.from.username;
+    const firstName = query.from.first_name;
+    const lastName = query.from.last_name;
+    const date = new Date().toISOString();
+    const userID = query.from.id;
+
+    const insertQuery = `INSERT INTO users(userId, username, firstname, lastname, date)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(userId) DO UPDATE SET
+    username=excluded.username,
+    firstName=excluded.firstName,
+    lastName=excluded.lastName,
+    date=excluded.date`;
+
+    db.run(
+      insertQuery,
+      [userID, username, firstName, lastName, date],
+      function (err) {
+        if (err) {
+          return console.error(err.message);
+        }
+      }
+    );
+
     const chatId = query.message.chat.id;
     const data = query.data;
 
@@ -368,3 +393,18 @@ const handleSendInvoice = async (chatId, data) => {
 };
 
 start();
+
+// Setting up Express server to get user count
+app.get("/user-count", (req, res) => {
+  db.get("SELECT COUNT(*) AS count FROM users", (err, row) => {
+    if (err) {
+      res.status(500).send("Error");
+      return console.error(err.message);
+    }
+    res.send(`Total users: ${row.count}`);
+  });
+});
+
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
+});

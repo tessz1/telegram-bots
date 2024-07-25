@@ -1,30 +1,27 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment variables
+.env
+
+# SQLite database
+telegram.bot.db
+
 # Logs
 logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-# Dependency directories
-node_modules
-dist
-dist-ssr
+# Optional npm cache directory
+.npm
 
-# Local environment files
-*.local
+# Optional eslint cache
+.eslintcache
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Mac OS specific
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
 
-# Environment variables file
-.env
+# Windows specific
+Thumbs.db
